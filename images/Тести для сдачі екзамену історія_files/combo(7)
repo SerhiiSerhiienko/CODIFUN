@@ -1,0 +1,703 @@
+YUI.add('moodle-core-notification-alert', function (Y, NAME) {
+
+var DIALOGUE_PREFIX,
+    BASE,
+    CONFIRMYES,
+    CONFIRMNO,
+    TITLE,
+    QUESTION,
+    CSS;
+
+DIALOGUE_PREFIX = 'moodle-dialogue',
+BASE = 'notificationBase',
+CONFIRMYES = 'yesLabel',
+CONFIRMNO = 'noLabel',
+TITLE = 'title',
+QUESTION = 'question',
+CSS = {
+    BASE : 'moodle-dialogue-base',
+    WRAP : 'moodle-dialogue-wrap',
+    HEADER : 'moodle-dialogue-hd',
+    BODY : 'moodle-dialogue-bd',
+    CONTENT : 'moodle-dialogue-content',
+    FOOTER : 'moodle-dialogue-ft',
+    HIDDEN : 'hidden',
+    LIGHTBOX : 'moodle-dialogue-lightbox'
+};
+
+// Set up the namespace once.
+M.core = M.core || {};
+/**
+ * A dialogue type designed to display an alert to the user.
+ *
+ * @module moodle-core-notification
+ * @submodule moodle-core-notification-alert
+ */
+
+var ALERT_NAME = 'Moodle alert',
+    ALERT;
+
+/**
+ * Extends core Dialogue to show the alert dialogue.
+ *
+ * @param {Object} config Object literal specifying the dialogue configuration properties.
+ * @constructor
+ * @class M.core.alert
+ * @extends M.core.dialogue
+ */
+ALERT = function(config) {
+    config.closeButton = false;
+    ALERT.superclass.constructor.apply(this, [config]);
+};
+Y.extend(ALERT, M.core.notification.info, {
+    /**
+     * The list of events to detach when destroying this dialogue.
+     *
+     * @property _closeEvents
+     * @type EventHandle[]
+     * @private
+     */
+    _closeEvents: null,
+    initializer: function() {
+        this._closeEvents = [];
+        this.publish('complete');
+        var yes = Y.Node.create('<input type="button" id="id_yuialertconfirm-' + this.get('COUNT') + '"' +
+                                 'value="'+this.get(CONFIRMYES)+'" />'),
+            content = Y.Node.create('<div class="confirmation-dialogue"></div>')
+                    .append(Y.Node.create('<div class="confirmation-message">'+this.get('message')+'</div>'))
+                    .append(Y.Node.create('<div class="confirmation-buttons"></div>')
+                            .append(yes));
+        this.get(BASE).addClass('moodle-dialogue-confirm');
+        this.setStdModContent(Y.WidgetStdMod.BODY, content, Y.WidgetStdMod.REPLACE);
+        this.setStdModContent(Y.WidgetStdMod.HEADER,
+                '<h1 id="moodle-dialogue-'+this.get('COUNT')+'-header-text">' + this.get(TITLE) + '</h1>', Y.WidgetStdMod.REPLACE);
+
+        this._closeEvents.push(
+            Y.on('key', this.submit, window, 'down:13', this),
+            yes.on('click', this.submit, this)
+        );
+
+        var closeButton = this.get('boundingBox').one('.closebutton');
+        if (closeButton) {
+            // The close button should act exactly like the 'No' button.
+            this._closeEvents.push(
+                closeButton.on('click', this.submit, this)
+            );
+        }
+    },
+    submit: function() {
+        new Y.EventHandle(this._closeEvents).detach();
+        this.fire('complete');
+        this.hide();
+        this.destroy();
+    }
+}, {
+    NAME: ALERT_NAME,
+    CSS_PREFIX: DIALOGUE_PREFIX,
+    ATTRS: {
+
+        /**
+         * The title of the alert.
+         *
+         * @attribute title
+         * @type String
+         * @default 'Alert'
+         */
+        title: {
+            validator: Y.Lang.isString,
+            value: 'Alert'
+        },
+
+        /**
+         * The message of the alert.
+         *
+         * @attribute message
+         * @type String
+         * @default 'Confirm'
+         */
+        message: {
+            validator: Y.Lang.isString,
+            value: 'Confirm'
+        },
+
+        /**
+         * The button text to use to accept the alert.
+         *
+         * @attribute yesLabel
+         * @type String
+         * @default 'Ok'
+         */
+        yesLabel: {
+            validator: Y.Lang.isString,
+            setter: function(txt) {
+                if (!txt) {
+                    txt = 'Ok';
+                }
+                return txt;
+            },
+            value: 'Ok'
+        }
+    }
+});
+
+M.core.alert = ALERT;
+
+
+}, '@VERSION@', {"requires": ["moodle-core-notification-dialogue"]});
+YUI.add('moodle-core-notification-exception', function (Y, NAME) {
+
+var DIALOGUE_PREFIX,
+    BASE,
+    CONFIRMYES,
+    CONFIRMNO,
+    TITLE,
+    QUESTION,
+    CSS;
+
+DIALOGUE_PREFIX = 'moodle-dialogue',
+BASE = 'notificationBase',
+CONFIRMYES = 'yesLabel',
+CONFIRMNO = 'noLabel',
+TITLE = 'title',
+QUESTION = 'question',
+CSS = {
+    BASE : 'moodle-dialogue-base',
+    WRAP : 'moodle-dialogue-wrap',
+    HEADER : 'moodle-dialogue-hd',
+    BODY : 'moodle-dialogue-bd',
+    CONTENT : 'moodle-dialogue-content',
+    FOOTER : 'moodle-dialogue-ft',
+    HIDDEN : 'hidden',
+    LIGHTBOX : 'moodle-dialogue-lightbox'
+};
+
+// Set up the namespace once.
+M.core = M.core || {};
+/**
+ * A dialogue type designed to display an appropriate error when a generic
+ * javascript error was thrown and caught.
+ *
+ * @module moodle-core-notification
+ * @submodule moodle-core-notification-exception
+ */
+
+var EXCEPTION_NAME = 'Moodle exception',
+    EXCEPTION;
+
+/**
+ * Extends core Dialogue to show the exception dialogue.
+ *
+ * @param {Object} config Object literal specifying the dialogue configuration properties.
+ * @constructor
+ * @class M.core.exception
+ * @extends M.core.dialogue
+ */
+EXCEPTION = function(c) {
+    var config = Y.mix({}, c);
+    config.width = config.width || (M.cfg.developerdebug)?Math.floor(Y.one(document.body).get('winWidth')/3)+'px':null;
+    config.closeButton = true;
+
+    // We need to whitelist some properties which are part of the exception
+    // prototype, otherwise AttributeCore filters them during value normalisation.
+    var whitelist = [
+        'message',
+        'name',
+        'fileName',
+        'lineNumber',
+        'stack'
+    ];
+    Y.Array.each(whitelist, function(k) {
+        config[k] = c[k];
+    });
+
+    EXCEPTION.superclass.constructor.apply(this, [config]);
+};
+Y.extend(EXCEPTION, M.core.notification.info, {
+    _hideTimeout : null,
+    _keypress : null,
+    initializer : function(config) {
+        var content,
+            self = this,
+            delay = this.get('hideTimeoutDelay');
+        this.get(BASE).addClass('moodle-dialogue-exception');
+        this.setStdModContent(Y.WidgetStdMod.HEADER,
+                '<h1 id="moodle-dialogue-'+config.COUNT+'-header-text">' + Y.Escape.html(config.name) + '</h1>',
+                Y.WidgetStdMod.REPLACE);
+        content = Y.Node.create('<div class="moodle-exception" data-rel="fatalerror"></div>')
+                .append(Y.Node.create('<div class="moodle-exception-message">' + Y.Escape.html(this.get('message')) + '</div>'))
+                .append(Y.Node.create('<div class="moodle-exception-param hidden param-filename"><label>File:</label> ' +
+                        Y.Escape.html(this.get('fileName'))+'</div>'))
+                .append(Y.Node.create('<div class="moodle-exception-param hidden param-linenumber"><label>Line:</label> ' +
+                        Y.Escape.html(this.get('lineNumber'))+'</div>'))
+                .append(Y.Node.create('<div class="moodle-exception-param hidden param-stacktrace">' +
+                                      '<label>Stack trace:</label> <pre>' +
+                        this.get('stack')+'</pre></div>'));
+        if (M.cfg.developerdebug) {
+            content.all('.moodle-exception-param').removeClass('hidden');
+        }
+        this.setStdModContent(Y.WidgetStdMod.BODY, content, Y.WidgetStdMod.REPLACE);
+
+        if (delay) {
+            this._hideTimeout = setTimeout(function(){self.hide();}, delay);
+        }
+        this.after('visibleChange', this.visibilityChanged, this);
+        this._keypress = Y.on('key', this.hide, window, 'down:13,27', this);
+        this.centerDialogue();
+    },
+    visibilityChanged : function(e) {
+        if (e.attrName === 'visible' && e.prevVal && !e.newVal) {
+            if (this._keypress) {
+                this._keypress.detach();
+            }
+            var self = this;
+            setTimeout(function(){self.destroy();}, 1000);
+        }
+    }
+}, {
+    NAME : EXCEPTION_NAME,
+    CSS_PREFIX : DIALOGUE_PREFIX,
+    ATTRS : {
+        /**
+         * The message of the alert.
+         *
+         * @attribute message
+         * @type String
+         * @default ''
+         */
+        message : {
+            value : ''
+        },
+
+        /**
+         * The name of the alert.
+         *
+         * @attribute title
+         * @type String
+         * @default ''
+         */
+        name : {
+            value : ''
+        },
+
+        /**
+         * The name of the file where the error was thrown.
+         *
+         * @attribute fileName
+         * @type String
+         * @default ''
+         */
+        fileName : {
+            value : ''
+        },
+
+        /**
+         * The line number where the error was thrown.
+         *
+         * @attribute lineNumber
+         * @type String
+         * @default ''
+         */
+        lineNumber : {
+            value : ''
+        },
+
+        /**
+         * The backtrace from the error
+         *
+         * @attribute lineNumber
+         * @type String
+         * @default ''
+         */
+        stack : {
+            setter : function(str) {
+                var lines = Y.Escape.html(str).split("\n"),
+                    pattern = new RegExp('^(.+)@('+M.cfg.wwwroot+')?(.{0,75}).*:(\\d+)$'),
+                    i;
+                for (i in lines) {
+                    lines[i] = lines[i].replace(pattern,
+                            "<div class='stacktrace-line'>ln: $4</div>" +
+                            "<div class='stacktrace-file'>$3</div>" +
+                            "<div class='stacktrace-call'>$1</div>");
+                }
+                return lines.join('');
+            },
+            value : ''
+        },
+
+        /**
+         * If set, the dialogue is hidden after the specified timeout period.
+         *
+         * @attribute hideTimeoutDelay
+         * @type Number
+         * @default null
+         * @optional
+         */
+        hideTimeoutDelay : {
+            validator : Y.Lang.isNumber,
+            value : null
+        }
+    }
+});
+
+M.core.exception = EXCEPTION;
+
+
+}, '@VERSION@', {"requires": ["moodle-core-notification-dialogue"]});
+YUI.add('moodle-core-notification-ajaxexception', function (Y, NAME) {
+
+var DIALOGUE_PREFIX,
+    BASE,
+    CONFIRMYES,
+    CONFIRMNO,
+    TITLE,
+    QUESTION,
+    CSS;
+
+DIALOGUE_PREFIX = 'moodle-dialogue',
+BASE = 'notificationBase',
+CONFIRMYES = 'yesLabel',
+CONFIRMNO = 'noLabel',
+TITLE = 'title',
+QUESTION = 'question',
+CSS = {
+    BASE : 'moodle-dialogue-base',
+    WRAP : 'moodle-dialogue-wrap',
+    HEADER : 'moodle-dialogue-hd',
+    BODY : 'moodle-dialogue-bd',
+    CONTENT : 'moodle-dialogue-content',
+    FOOTER : 'moodle-dialogue-ft',
+    HIDDEN : 'hidden',
+    LIGHTBOX : 'moodle-dialogue-lightbox'
+};
+
+// Set up the namespace once.
+M.core = M.core || {};
+/**
+ * A dialogue type designed to display an appropriate error when an error
+ * thrown in the Moodle codebase was reported during an AJAX request.
+ *
+ * @module moodle-core-notification
+ * @submodule moodle-core-notification-ajaxexception
+ */
+
+var AJAXEXCEPTION_NAME = 'Moodle AJAX exception',
+    AJAXEXCEPTION;
+
+/**
+ * Extends core Dialogue to show the exception dialogue.
+ *
+ * @param {Object} config Object literal specifying the dialogue configuration properties.
+ * @constructor
+ * @class M.core.ajaxException
+ * @extends M.core.dialogue
+ */
+AJAXEXCEPTION = function(config) {
+    config.name = config.name || 'Error';
+    config.closeButton = true;
+    AJAXEXCEPTION.superclass.constructor.apply(this, [config]);
+};
+Y.extend(AJAXEXCEPTION, M.core.notification.info, {
+    _keypress : null,
+    initializer : function(config) {
+        var content,
+            self = this,
+            delay = this.get('hideTimeoutDelay');
+        this.get(BASE).addClass('moodle-dialogue-exception');
+        this.setStdModContent(Y.WidgetStdMod.HEADER,
+                '<h1 id="moodle-dialogue-'+this.get('COUNT')+'-header-text">' + Y.Escape.html(config.name) + '</h1>',
+                Y.WidgetStdMod.REPLACE);
+        content = Y.Node.create('<div class="moodle-ajaxexception" data-rel="fatalerror"></div>')
+                .append(Y.Node.create('<div class="moodle-exception-message">' + Y.Escape.html(this.get('error')) + '</div>'))
+                .append(Y.Node.create('<div class="moodle-exception-param hidden param-debuginfo"><label>URL:</label> ' +
+                        this.get('reproductionlink')+'</div>'))
+                .append(Y.Node.create('<div class="moodle-exception-param hidden param-debuginfo"><label>Debug info:</label> ' +
+                        Y.Escape.html(this.get('debuginfo'))+'</div>'))
+                .append(Y.Node.create('<div class="moodle-exception-param hidden param-stacktrace">' +
+                                      '<label>Stack trace:</label> <pre>' +
+                        Y.Escape.html(this.get('stacktrace'))+'</pre></div>'));
+        if (M.cfg.developerdebug) {
+            content.all('.moodle-exception-param').removeClass('hidden');
+        }
+        this.setStdModContent(Y.WidgetStdMod.BODY, content, Y.WidgetStdMod.REPLACE);
+
+        if (delay) {
+            this._hideTimeout = setTimeout(function(){self.hide();}, delay);
+        }
+        this.after('visibleChange', this.visibilityChanged, this);
+        this._keypress = Y.on('key', this.hide, window, 'down:13, 27', this);
+        this.centerDialogue();
+    },
+    visibilityChanged : function(e) {
+        if (e.attrName === 'visible' && e.prevVal && !e.newVal) {
+            var self = this;
+            this._keypress.detach();
+            setTimeout(function(){self.destroy();}, 1000);
+        }
+    }
+}, {
+    NAME : AJAXEXCEPTION_NAME,
+    CSS_PREFIX : DIALOGUE_PREFIX,
+    ATTRS : {
+
+        /**
+         * The error message given in the exception.
+         *
+         * @attribute error
+         * @type String
+         * @default 'Unknown error'
+         * @optional
+         */
+        error : {
+            validator : Y.Lang.isString,
+            value: M.util.get_string('unknownerror', 'moodle')
+        },
+
+        /**
+         * Any additional debug information given in the exception.
+         *
+         * @attribute stacktrace
+         * @type String|null
+         * @default null
+         * @optional
+         */
+        debuginfo : {
+            value : null
+        },
+
+        /**
+         * The complete stack trace provided in the exception.
+         *
+         * @attribute stacktrace
+         * @type String|null
+         * @default null
+         * @optional
+         */
+        stacktrace : {
+            value : null
+        },
+
+        /**
+         * A link which may be used by support staff to replicate the issue.
+         *
+         * @attribute reproductionlink
+         * @type String
+         * @default null
+         * @optional
+         */
+        reproductionlink : {
+            setter : function(link) {
+                if (link !== null) {
+                    link = Y.Escape.html(link);
+                    link = '<a href="'+link+'">'+link.replace(M.cfg.wwwroot, '')+'</a>';
+                }
+                return link;
+            },
+            value : null
+        },
+
+        /**
+         * If set, the dialogue is hidden after the specified timeout period.
+         *
+         * @attribute hideTimeoutDelay
+         * @type Number
+         * @default null
+         * @optional
+         */
+        hideTimeoutDelay : {
+            validator : Y.Lang.isNumber,
+            value : null
+        }
+    }
+});
+
+M.core.ajaxException = AJAXEXCEPTION;
+
+
+}, '@VERSION@', {"requires": ["moodle-core-notification-dialogue"]});
+YUI.add('moodle-filter_glossary-autolinker', function (Y, NAME) {
+
+var AUTOLINKERNAME = 'Glossary filter autolinker',
+    WIDTH = 'width',
+    HEIGHT = 'height',
+    MENUBAR = 'menubar',
+    LOCATION = 'location',
+    SCROLLBARS = 'scrollbars',
+    RESIZEABLE = 'resizable',
+    TOOLBAR = 'toolbar',
+    STATUS = 'status',
+    DIRECTORIES = 'directories',
+    FULLSCREEN = 'fullscreen',
+    DEPENDENT = 'dependent',
+    AUTOLINKER;
+
+AUTOLINKER = function() {
+    AUTOLINKER.superclass.constructor.apply(this, arguments);
+};
+Y.extend(AUTOLINKER, Y.Base, {
+    overlay : null,
+    alertpanels: {},
+    initializer : function() {
+        var self = this;
+        require(['core/event'], function(event) {
+            Y.delegate('click', function(e){
+                e.preventDefault();
+
+                //display a progress indicator
+                var title = '',
+                    content = Y.Node.create('<div id="glossaryfilteroverlayprogress">' +
+                                            '<img src="' + M.cfg.loadingicon + '" class="spinner" />' +
+                                            '</div>'),
+                    o = new Y.Overlay({
+                        headerContent :  title,
+                        bodyContent : content
+                    }),
+                    fullurl,
+                    cfg;
+                self.overlay = o;
+                o.render(Y.one(document.body));
+
+                //Switch over to the ajax url and fetch the glossary item
+                fullurl = this.getAttribute('href').replace('showentry.php','showentry_ajax.php');
+                cfg = {
+                    method: 'get',
+                    context : self,
+                    on: {
+                        success: function(id, o) {
+                            this.display_callback(o.responseText, event);
+                        },
+                        failure: function(id, o) {
+                            var debuginfo = o.statusText;
+                            if (M.cfg.developerdebug) {
+                                o.statusText += ' (' + fullurl + ')';
+                            }
+                            new M.core.exception({ message: debuginfo });
+                        }
+                    }
+                };
+                Y.io(fullurl, cfg);
+
+            }, Y.one(document.body), 'a.glossary.autolink.concept');
+        });
+    },
+    /**
+     * @method display_callback
+     * @param {String} content - Content to display
+     * @param {Object} event The amd event module used to fire events for jquery and yui.
+     */
+    display_callback : function(content, event) {
+        var data,
+            key,
+            alertpanel,
+            alertpanelid,
+            definition,
+            position;
+        try {
+            data = Y.JSON.parse(content);
+            if (data.success){
+                this.overlay.hide(); //hide progress indicator
+
+                for (key in data.entries) {
+                    definition = data.entries[key].definition + data.entries[key].attachments;
+                    alertpanel = new M.core.alert({title:data.entries[key].concept, draggable: true,
+                        message:definition, modal:false, yesLabel: M.util.get_string('ok', 'moodle')});
+                    // Notify the filters about the modified nodes.
+                    event.notifyFilterContentUpdated(alertpanel.get('boundingBox').getDOMNode());
+                    Y.Node.one('#id_yuialertconfirm-' + alertpanel.get('COUNT')).focus();
+
+                    // Register alertpanel for stacking.
+                    alertpanelid = '#moodle-dialogue-' + alertpanel.get('COUNT');
+                    alertpanel.on('complete', this._deletealertpanel, this, alertpanelid);
+
+                    // We already have some windows opened, so set the right position...
+                    if (!Y.Object.isEmpty(this.alertpanels)){
+                        position = this._getLatestWindowPosition();
+                        Y.Node.one(alertpanelid).setXY([position[0] + 10, position[1] + 10]);
+                    }
+
+                    this.alertpanels[alertpanelid] = Y.Node.one(alertpanelid).getXY();
+                }
+
+                return true;
+            } else if (data.error) {
+                new M.core.ajaxException(data);
+            }
+        } catch(e) {
+            new M.core.exception(e);
+        }
+        return false;
+    },
+    _getLatestWindowPosition : function() {
+        var lastPosition = [0, 0];
+        Y.Object.each(this.alertpanels, function(position) {
+            if (position[0] > lastPosition[0]){
+                lastPosition = position;
+            }
+        });
+        return lastPosition;
+    },
+    _deletealertpanel : function(ev, alertpanelid) {
+        delete this.alertpanels[alertpanelid];
+    }
+}, {
+    NAME : AUTOLINKERNAME,
+    ATTRS : {
+        url : {
+            validator : Y.Lang.isString,
+            value : M.cfg.wwwroot+'/mod/glossary/showentry.php'
+        },
+        name : {
+            validator : Y.Lang.isString,
+            value : 'glossaryconcept'
+        },
+        options : {
+            getter : function() {
+                return {
+                    width : this.get(WIDTH),
+                    height : this.get(HEIGHT),
+                    menubar : this.get(MENUBAR),
+                    location : this.get(LOCATION),
+                    scrollbars : this.get(SCROLLBARS),
+                    resizable : this.get(RESIZEABLE),
+                    toolbar : this.get(TOOLBAR),
+                    status : this.get(STATUS),
+                    directories : this.get(DIRECTORIES),
+                    fullscreen : this.get(FULLSCREEN),
+                    dependent : this.get(DEPENDENT)
+                };
+            },
+            readOnly : true
+        },
+        width : {value : 600},
+        height : {value : 450},
+        menubar : {value : false},
+        location : {value : false},
+        scrollbars : {value : true},
+        resizable : {value : true},
+        toolbar : {value : true},
+        status : {value : true},
+        directories : {value : false},
+        fullscreen : {value : false},
+        dependent : {value : true}
+    }
+});
+
+M.filter_glossary = M.filter_glossary || {};
+M.filter_glossary.init_filter_autolinking = function(config) {
+    return new AUTOLINKER(config);
+};
+
+
+}, '@VERSION@', {
+    "requires": [
+        "base",
+        "node",
+        "io-base",
+        "json-parse",
+        "event-delegate",
+        "overlay",
+        "moodle-core-event",
+        "moodle-core-notification-alert",
+        "moodle-core-notification-exception",
+        "moodle-core-notification-ajaxexception"
+    ]
+});

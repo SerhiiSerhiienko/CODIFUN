@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" type="text/css" href="../css/style.css">
+    <title>CODIFUN</title>
+
+    <style>
+        h1 {
+            color: red;
+            font-size: 45px;
+        }
+    
+        form {
+        color: #00ccff;
+        font-family: 'Georgia';
+        font-weight: bold;    
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <header>
+
+        <h1>
+            Codifan inspire me!
+        </h1>
+
+        <p>
+            <em>
+                Lorem Ipsum - це текст-"риба", що використовується в друкарстві та дизайні. Lorem Ipsum є, фактично,
+                стандартною "рибою"
+                аж з XVI сторіччя, коли невідомий друкар взяв шрифтову гранку та склав на ній підбірку зразків шрифтів.
+                "Риба" не тільки
+                успішно пережила п'ять століть, але й прижилася в електронному верстуванні, залишаючись по суті
+                незмінною.
+                Вона
+                популяризувалась в 60-их роках минулого сторіччя завдяки виданню зразків шрифтів Letraset, які містили
+                уривки з Lorem
+                Ipsum, і вдруге - нещодавно завдяки програмам комп'ютерного верстування на кшталт Aldus Pagemaker, які
+                використовували
+                різні версії Lorem Ipsum.
+            </em>
+        </p>
+
+    </header>
+
+    <nav>
+
+        <a href="../index.html">Головна сторінка</a>
+        <a href="../pages/interesting-facts.html">Цікаві факти</a>
+        <a href="../pages/address.html">Адреса</a>
+        <a href="../pages/form.html">Заповніть форму</a>
+
+    </nav>
+
+    <section>
+
+        <h2 style="text-align:center">Форма з особистими даними &#x2663</h2>
+        
+        <div class="block">
+            <canvas id="myCanvas" width="300px" height="80px"></canvas>
+        </div>
+        
+        <div>
+            <h4 class="interract">Натисніть, щоб повернутися</h4>
+        
+            <a href="../index.html">
+                <svg width="50px" height="50px">
+                    <circle cx="25px" cy="25px" r="20px" stroke="green" stroke-width="4px" fill="yellow" />
+                </svg>
+            </a>
+        
+        </div>
+
+        <form action="https://www.codifun.com/" method="POST">
+            <br>
+            Ім'я: <br>
+            <input type="text" name='name'>
+            <br><br>
+        
+            Прізвище:
+            <br>
+            <input type="text" name='sename'>
+            <br><br>
+        
+            Дата народження:
+            <input type="date" name='date'>
+            <br><br>
+        
+            Країна народження:
+            <select name="countries" multiple size="1">
+                <option value="1">Республіка молдова</option>
+                <option value="2">Румунія</option>
+                <option value="3" selected>Україна</option>
+            </select>
+            <br><br>
+        
+            Інтереси:
+            <br>
+            <input type="checkbox" name="inrerests" value="hTML"> HTML <br>
+            <input type="checkbox" name="inrerests" value="javascript"> JavaScript <br>
+            <input type="checkbox" name="inrerests" value="php"> PHP <br>
+            <input type="checkbox" name="inrerests" value="css"> CSS
+            <br><br>
+        
+            E-mail:
+            <input type="text" name='E-mail'>
+            <br><br>
+        
+            Пароль:
+            <input type="password" name='pass'>
+            <br><br>
+        
+            Як часто бажаєте отримувати повідомлення на електронну пошту?
+            <br>
+            <input type="radio" name="send-post" value="weekly"> Щотижня <br>
+            <input type="radio" name="send-post" value="monthly"> Щомісяця <br>
+            <input type="radio" name="send-post" value="never"> Ніколи <br><br><br>
+        
+            Ваша думка про Codifun:
+            <br>
+            <textarea name="describe" cols="50" rows="8"></textarea>
+            <br><br>
+        
+            <input type="submit" value="Відправити">
+        
+        </form>
+
+    </section>
+
+    <footer>
+
+        <h3 align="center" id="demo"></h3>
+        <script src="../js/main.js"></script>
+
+    </footer>
+
+
+
+</body>
+
+</html>
